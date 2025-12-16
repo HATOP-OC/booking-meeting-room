@@ -8,29 +8,37 @@ interface AuthContextType {
   register: (name: string, email: string, password: string) => Promise<boolean>;
   logout: () => void;
   isAuthenticated: boolean;
+  initializing: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
+      setInitializing(false);
+      return;
+    }
+
+    const token = localStorage.getItem('token');
+    if (token) {
+      fetch(`${API_BASE}/api/me`, { headers: { 'Authorization': `Bearer ${token}` } })
+        .then(r => r.json())
+        .then(u => {
+          if (u && u.email) {
+            setUser({ id: u.id.toString(), name: u.name, email: u.email, role: u.role, token });
+            localStorage.setItem('currentUser', JSON.stringify({ id: u.id.toString(), name: u.name, email: u.email, role: u.role, token }));
+          }
+        })
+        .catch(() => {})
+        .finally(() => setInitializing(false));
     } else {
-      const token = localStorage.getItem('token');
-      if (token) {
-        fetch(`${API_BASE}/api/me`, { headers: { 'Authorization': `Bearer ${token}` } })
-          .then(r => r.json())
-          .then(u => {
-            if (u && u.email) {
-              setUser({ id: u.id.toString(), name: u.name, email: u.email, role: u.role, token });
-              localStorage.setItem('currentUser', JSON.stringify({ id: u.id.toString(), name: u.name, email: u.email, role: u.role, token }));
-            }
-          }).catch(() => {});
-      }
+      setInitializing(false);
     }
   }, []);
 
@@ -71,7 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{ user, login, register, logout, isAuthenticated: !!user, initializing }}>
       {children}
     </AuthContext.Provider>
   );

@@ -122,10 +122,10 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     <Modal isOpen={isOpen} onClose={onClose} title={`Bookings for ${roomName}`}>
       <div className="space-y-6">
         {/* Form */}
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <h4 className="font-medium mb-2">{editingId ? 'Edit Booking' : 'New Booking'}</h4>
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+          <h4 className="font-medium mb-3 text-gray-800">{editingId ? 'Edit Booking' : 'New Booking'}</h4>
           <form onSubmit={handleSubmit} className="space-y-3">
-            {error && <div className="text-red-600 text-sm">{error}</div>}
+            {error && <div className="bg-red-50 text-red-700 p-2 rounded">{error}</div>}
             
             <div>
               <input 
@@ -134,33 +134,33 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 type="text" 
                 value={title} 
                 onChange={e => setTitle(e.target.value)} 
-                className="w-full border border-gray-300 rounded-md p-2 text-sm" 
+                className="w-full border border-gray-200 rounded-lg p-3 text-sm shadow-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500" 
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <input 
                 required 
                 type="datetime-local" 
                 value={startTime} 
                 onChange={e => setStartTime(e.target.value)} 
-                className="w-full border border-gray-300 rounded-md p-2 text-sm" 
+                className="w-full border border-gray-200 rounded-lg p-3 text-sm shadow-sm" 
               />
               <input 
                 required 
                 type="datetime-local" 
                 value={endTime} 
                 onChange={e => setEndTime(e.target.value)} 
-                className="w-full border border-gray-300 rounded-md p-2 text-sm" 
+                className="w-full border border-gray-200 rounded-lg p-3 text-sm shadow-sm" 
               />
             </div>
 
             <div className="flex gap-2">
-              <button type="submit" className="flex-1 bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 text-sm">
+              <button type="submit" className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 text-sm shadow-sm">
                 {editingId ? 'Update' : 'Book'}
               </button>
               {editingId && (
-                <button type="button" onClick={resetForm} className="px-4 py-2 bg-gray-200 rounded-md text-sm">
+                <button type="button" onClick={resetForm} className="px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm hover:bg-gray-100">
                   Cancel
                 </button>
               )}
@@ -171,26 +171,25 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         {/* List */}
         <div>
           <h4 className="font-medium mb-2">Scheduled Meetings</h4>
-          <div className="space-y-2 max-h-60 overflow-y-auto">
+          <div className="space-y-3 max-h-60 overflow-y-auto">
             {roomBookings.length === 0 ? (
               <p className="text-gray-500 text-sm">No bookings yet.</p>
             ) : (
               roomBookings.map(booking => (
-                <div key={booking.id} className="border border-gray-200 p-3 rounded-md flex justify-between items-start">
+                <div key={booking.id} className="bg-white shadow-sm rounded-lg p-3 flex justify-between items-start border border-gray-100">
                   <div>
-                    <div className="font-medium text-gray-900">{booking.title}</div>
-                    <div className="text-xs text-gray-500">
-                      {new Date(booking.startTime).toLocaleString()} - {new Date(booking.endTime).toLocaleTimeString()}
-                    </div>
-                    <div className="text-xs text-blue-600 mt-1">by {booking.userEmail}</div>
+                    <div className="font-semibold text-gray-900">{booking.title}</div>
+                    <div className="text-xs text-gray-500 mt-1">{new Date(booking.startTime).toLocaleString()} — {new Date(booking.endTime).toLocaleTimeString()}</div>
+                    <div className="text-xs text-gray-500 mt-1">by {booking.userEmail}</div>
                   </div>
-                  
-                  {canModify(booking) && (
-                    <div className="flex gap-2">
-                      <button onClick={() => handleEdit(booking)} className="text-blue-600 text-xs hover:underline">Edit</button>
-                      <button onClick={() => handleDelete(booking.id)} className="text-red-600 text-xs hover:underline">Cancel</button>
-                    </div>
-                  )}
+                  <div className="flex gap-2 items-start">
+                    {canModify(booking) && (
+                      <>
+                        <button onClick={() => handleEdit(booking)} className="text-blue-600 text-xs hover:underline">Edit</button>
+                        <button onClick={() => handleDelete(booking.id)} className="text-red-600 text-xs hover:underline">Cancel</button>
+                      </>
+                    )}
+                  </div>
                 </div>
               ))
             )}

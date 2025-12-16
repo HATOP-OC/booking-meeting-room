@@ -43,31 +43,31 @@ export const ManageUsersModal: React.FC<ManageUsersModalProps> = ({ isOpen, onCl
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Manage Users for ${roomName}`}>
       <div className="space-y-6">
-        {error && <div className="text-red-600 text-sm">{error}</div>}
-        <form onSubmit={handleAdd} className="flex gap-2 items-end">
+        {error && <div className="bg-red-50 text-red-700 p-2 rounded">{error}</div>}
+        <form onSubmit={handleAdd} className="flex flex-col sm:flex-row gap-3 items-end">
           <div className="flex-1">
             <label className="block text-sm font-medium text-gray-700">User Email</label>
             <input 
               type="email" 
               value={email}
               onChange={e => setEmail(e.target.value)}
-              className="mt-1 block w-full border border-gray-300 rounded-md p-2" 
+              className="mt-1 block w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500" 
               placeholder="user@example.com"
               required
             />
           </div>
-          <div>
+          <div className="w-40">
             <label className="block text-sm font-medium text-gray-700">Role</label>
             <select 
               value={role} 
               onChange={e => setRole(e.target.value as Role)}
-              className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+              className="mt-1 block w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm"
             >
               <option value="user">User</option>
               <option value="admin">Admin</option>
             </select>
           </div>
-          <button type="submit" disabled={loading} className="bg-green-600 disabled:opacity-50 text-white px-4 py-2 rounded-md hover:bg-green-700">
+          <button type="submit" disabled={loading} className="inline-flex items-center gap-2 bg-green-600 disabled:opacity-50 text-white px-4 py-2 rounded-lg hover:bg-green-700 shadow-sm">
             {loading ? 'Adding...' : 'Add'}
           </button>
         </form>
@@ -77,14 +77,17 @@ export const ManageUsersModal: React.FC<ManageUsersModalProps> = ({ isOpen, onCl
           {roomUsers.length === 0 ? (
             <p className="text-gray-500 text-sm">No users added specifically to this room.</p>
           ) : (
-            <ul className="divide-y divide-gray-200">
+            <ul className="divide-y divide-gray-100 bg-white rounded-lg shadow-sm">
               {roomUsers.map((perm) => (
-                <li key={perm.userEmail} className="py-2 flex justify-between items-center">
-                  <div>
-                    <span className="text-gray-900 font-medium">{perm.userEmail}</span>
-                    <span className={`ml-2 text-xs px-2 py-0.5 rounded-full ${perm.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'}`}>
-                      {perm.role}
-                    </span>
+                <li key={perm.userEmail} className="py-3 px-4 flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-semibold text-sm">
+                      {perm.userEmail.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">{perm.userEmail}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">Role: <span className={`ml-1 inline-block px-2 py-0.5 rounded-full text-xs ${perm.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'}`}>{perm.role}</span></div>
+                    </div>
                   </div>
                   <button 
                     onClick={async () => {

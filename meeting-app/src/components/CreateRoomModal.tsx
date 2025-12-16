@@ -35,17 +35,17 @@ export const CreateRoomModal: React.FC<RoomModalProps> = ({ isOpen, onClose, onS
       <form onSubmit={(e) => { e.preventDefault(); handleFormSubmit(); }} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700">Room Name</label>
-          <input value={name} onChange={e => setName(e.target.value)} className="mt-1 block w-full border border-gray-300 rounded-md p-2" placeholder="e.g. Main Hall" />
+          <input value={name} onChange={e => setName(e.target.value)} className="mt-1 block w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-500" placeholder="e.g. Main Hall" />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700">Description</label>
-          <textarea value={description} onChange={e => setDescription(e.target.value)} className="mt-1 block w-full border border-gray-300 rounded-md p-2" />
+          <textarea rows={3} value={description} onChange={e => setDescription(e.target.value)} className="mt-1 block w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm resize-y max-h-40" />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700">Capacity</label>
-          <input type="number" value={capacity} onChange={e => setCapacity(Number(e.target.value))} className="mt-1 block w-full border border-gray-300 rounded-md p-2" />
+          <input type="number" value={capacity} onChange={e => setCapacity(Number(e.target.value))} className="mt-1 block w-full px-3 py-2 border border-gray-200 rounded-lg shadow-sm" />
         </div>
-        <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700">
+        <button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-2 rounded-md hover:from-blue-700 hover:to-indigo-700 shadow">
           {initialData ? "Save Changes" : "Create Room"}
         </button>
       </form>
