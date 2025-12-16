@@ -42,13 +42,17 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     setEditingId(booking.id);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Cancel this booking?')) {
-      deleteBooking(id);
+  const handleDelete = async (id: string) => {
+    if (!confirm('Cancel this booking?')) return;
+    setError('');
+    try {
+      await deleteBooking(id);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to delete booking');
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -78,29 +82,34 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       return;
     }
 
-    if (editingId) {
-      updateBooking(editingId, {
-        title,
-        startTime: start.toISOString(),
-        endTime: end.toISOString()
-      });
-    } else {
-      addBooking({
-        roomId,
-        userId: user.id,
-        userEmail: user.email,
-        title,
-        startTime: start.toISOString(),
-        endTime: end.toISOString()
-      });
+    try {
+      if (editingId) {
+        await updateBooking(editingId, {
+          title,
+          startTime: start.toISOString(),
+          endTime: end.toISOString()
+        });
+      } else {
+        await addBooking({
+          roomId,
+          userId: user.id,
+          userEmail: user.email,
+          title,
+          startTime: start.toISOString(),
+          endTime: end.toISOString()
+        });
+      }
+      resetForm();
+    } catch (err: any) {
+      if (err.message && err.message.includes('time conflict')) setError('Time slot conflict!');
+      else setError(err?.message || 'Failed to save booking');
     }
-    
-    resetForm();
   };
 
   const canModify = (booking: Booking) => {
     if (!user) return false;
-    return isAdmin || booking.userId === user.id;
+    // allow admin, same user id, or same email (since backend may create different numeric user ids)
+    return isAdmin || booking.userId === user.id || booking.userEmail === user.email;
   };
 
   return (
