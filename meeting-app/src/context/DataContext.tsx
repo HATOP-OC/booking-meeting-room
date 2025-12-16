@@ -12,14 +12,16 @@ interface DataContextType {
   updateBooking: (id: string, data: Partial<Booking>) => Promise<void>;
   deleteBooking: (id: string) => Promise<void>;
   isRoomAvailable: (roomId: string, start: Date, end: Date, excludeBookingId?: string) => boolean;
-  addRoomUser: (roomId: string, userEmail: string, role: Role) => void;
-  removeRoomUser: (roomId: string, userEmail: string) => void;
+  addRoomUser: (roomId: string, userEmail: string, role: Role) => Promise<void>;
+  removeRoomUser: (roomId: string, userEmail: string) => Promise<void>;
+  getRoomUsers: (roomId: string) => Promise<{userEmail: string, role: Role}[]>;
   getUserRoleForRoom: (roomId: string, userEmail: string) => Role | null;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
-const API_BASE = (import.meta.env.VITE_API_URL as string) || 'http://localhost:4000';
+import { API_BASE } from '../config/api';
+import { useAuth } from './AuthContext';
 
 const mapApiBooking = (b: any): Booking => ({
   id: b.id.toString(),
@@ -36,14 +38,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [roomPermissions, setRoomPermissions] = useState<RoomPermission[]>([]);
 
+  const { user } = useAuth();
+
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [rRes, bRes] = await Promise.all([
-          fetch(`${API_BASE}/api/rooms`),
-          fetch(`${API_BASE}/api/bookings`),
-        ]);
-        if (rRes.ok) {
+        const headers: any = { 'Content-Type': 'application/json' };
+        if (user?.token) headers['Authorization'] = `Bearer ${user.token}`;
+            const [rRes, bRes] = await Promise.all([
+              fetch(`${API_BASE}/api/rooms`, { headers }),
+              fetch(`${API_BASE}/api/bookings`, { headers }),
+            ]);
+            if (rRes.ok) {
           const rData = await rRes.json();
           setRooms(rData.map((r: any) => ({ id: r.id.toString(), name: r.name, description: r.description || '', capacity: r.capacity })));
         }
@@ -56,18 +62,28 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
     fetchData();
-  }, []);
+  }, [user]);
 
-  const addRoom = (roomData: Omit<Room, 'id'>) => {
-    const newRoom: Room = { ...roomData, id: Date.now().toString() };
-    setRooms(prev => [...prev, newRoom]);
+  const addRoom = async (roomData: Omit<Room, 'id'>) => {
+    if (!user) throw new Error('not authenticated');
+    const res = await fetch(`${API_BASE}/api/rooms`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user.token}` }, body: JSON.stringify(roomData) });
+    if (!res.ok) throw new Error('Failed to create room');
+    const r = await res.json();
+    setRooms(prev => [...prev, r]);
   };
 
-  const updateRoom = (id: string, data: Partial<Room>) => {
-    setRooms(prev => prev.map(room => room.id === id ? { ...room, ...data } : room));
+  const updateRoom = async (id: string, data: Partial<Room>) => {
+    if (!user) throw new Error('not authenticated');
+    const res = await fetch(`${API_BASE}/api/rooms/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user.token}` }, body: JSON.stringify(data) });
+    if (!res.ok) throw new Error('Failed to update room');
+    const r = await res.json();
+    setRooms(prev => prev.map(room => room.id === id ? r : room));
   };
 
-  const deleteRoom = (id: string) => {
+  const deleteRoom = async (id: string) => {
+    if (!user) throw new Error('not authenticated');
+    const res = await fetch(`${API_BASE}/api/rooms/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${user.token}` } });
+    if (!res.ok) throw new Error('Failed to delete room');
     setRooms(prev => prev.filter(room => room.id !== id));
     setBookings(prev => prev.filter(b => b.roomId !== id));
     setRoomPermissions(prev => prev.filter(p => p.roomId !== id));
@@ -75,12 +91,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const addBooking = async (bookingData: Omit<Booking, 'id'>) => {
     try {
+      const headers: any = { 'Content-Type': 'application/json' };
+      if (user?.token) headers['Authorization'] = `Bearer ${user.token}`;
       const res = await fetch(`${API_BASE}/api/bookings`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           roomId: bookingData.roomId,
-          userId: bookingData.userId,
           userEmail: bookingData.userEmail,
           title: bookingData.title,
           startTime: bookingData.startTime,
@@ -102,9 +119,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const updateBooking = async (id: string, data: Partial<Booking>) => {
     try {
+      const headers: any = { 'Content-Type': 'application/json' };
+      if (user?.token) headers['Authorization'] = `Bearer ${user.token}`;
       const res = await fetch(`${API_BASE}/api/bookings/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ title: data.title, startTime: data.startTime, endTime: data.endTime }),
       });
       if (!res.ok) {
@@ -122,7 +141,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const deleteBooking = async (id: string) => {
     try {
-      const res = await fetch(`${API_BASE}/api/bookings/${id}`, { method: 'DELETE' });
+      const headers: any = { 'Content-Type': 'application/json' };
+    if (user?.token) headers['Authorization'] = `Bearer ${user.token}`;
+    const res = await fetch(`${API_BASE}/api/bookings/${id}`, { method: 'DELETE', headers });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || 'Failed to delete booking');
@@ -146,15 +167,51 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
-  const addRoomUser = (roomId: string, userEmail: string, role: Role) => {
+  const addRoomUser = async (roomId: string, userEmail: string, role: Role) => {
+    if (!user) throw new Error('not authenticated');
+    const res = await fetch(`${API_BASE}/api/rooms/${roomId}/users`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user.token}` },
+      body: JSON.stringify({ userEmail, role })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to add user');
+    }
+    const payload = await res.json();
     setRoomPermissions(prev => {
       const filtered = prev.filter(p => !(p.roomId === roomId && p.userEmail === userEmail));
-      return [...filtered, { roomId, userEmail, role }];
+      return [...filtered, { roomId, userEmail: payload.userEmail, role: payload.role }];
     });
   };
 
-  const removeRoomUser = (roomId: string, userEmail: string) => {
+  const removeRoomUser = async (roomId: string, userEmail: string) => {
+    if (!user) throw new Error('not authenticated');
+    const res = await fetch(`${API_BASE}/api/rooms/${roomId}/users`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user.token}` },
+      body: JSON.stringify({ userEmail })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to remove user');
+    }
     setRoomPermissions(prev => prev.filter(p => !(p.roomId === roomId && p.userEmail === userEmail)));
+  };
+
+  const getRoomUsers = async (roomId: string) => {
+    const headers: any = { 'Content-Type': 'application/json' };
+    if (user?.token) headers['Authorization'] = `Bearer ${user.token}`;
+    const res = await fetch(`${API_BASE}/api/rooms/${roomId}/users`, { headers });
+    if (!res.ok) throw new Error('Failed to fetch room users');
+    const data = await res.json();
+    // sync local store
+    setRoomPermissions(prev => {
+      const filtered = prev.filter(p => p.roomId !== roomId);
+      const mapped = data.map((d: any) => ({ roomId, userEmail: d.userEmail, role: d.role }));
+      return [...filtered, ...mapped];
+    });
+    return data;
   };
 
   const getUserRoleForRoom = (roomId: string, userEmail: string): Role | null => {
@@ -168,7 +225,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       addRoom, updateRoom, deleteRoom, 
       addBooking, updateBooking, deleteBooking, 
       isRoomAvailable, 
-      addRoomUser, removeRoomUser, getUserRoleForRoom 
+      addRoomUser, removeRoomUser, getRoomUsers, getUserRoleForRoom 
     }}>
       {children}
     </DataContext.Provider>

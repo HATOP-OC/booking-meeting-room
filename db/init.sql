@@ -22,6 +22,15 @@ CREATE TABLE IF NOT EXISTS bookings (
   purpose TEXT
 );
 
+CREATE TABLE IF NOT EXISTS room_permissions (
+  id SERIAL PRIMARY KEY,
+  room_id INTEGER REFERENCES rooms(id) ON DELETE CASCADE,
+  user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  user_email TEXT NOT NULL,
+  role TEXT NOT NULL,
+  UNIQUE(room_id, user_email)
+);
+
 -- Seed data (idempotent)
 INSERT INTO users (id, name, email) VALUES (1, 'Admin', 'admin@example.com') ON CONFLICT DO NOTHING;
 INSERT INTO rooms (id, name, capacity, location) VALUES (1, 'Ocean', 8, '1st Floor') ON CONFLICT DO NOTHING;

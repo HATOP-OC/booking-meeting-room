@@ -1,5 +1,4 @@
-import React, { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import React, { useEffect, useState } from 'react';
 import { Modal } from './Modal';
 import type { Room } from '../types';
 
@@ -11,38 +10,40 @@ interface RoomModalProps {
 }
 
 export const CreateRoomModal: React.FC<RoomModalProps> = ({ isOpen, onClose, onSubmit, initialData }) => {
-  const { register, handleSubmit, reset, setValue } = useForm<Omit<Room, 'id'>>();
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [capacity, setCapacity] = useState<number | ''>(0);
 
   useEffect(() => {
     if (initialData) {
-      setValue('name', initialData.name);
-      setValue('description', initialData.description);
-      setValue('capacity', initialData.capacity);
-    } else {
-      reset({ name: '', description: '', capacity: 0 });
+      setName(initialData.name);
+      setDescription(initialData.description);
+      setCapacity(initialData.capacity || 0);
+    } else if (isOpen) {
+      setName(''); setDescription(''); setCapacity(0);
     }
-  }, [initialData, isOpen, setValue, reset]);
+  }, [initialData, isOpen]);
 
-  const handleFormSubmit = (data: Omit<Room, 'id'>) => {
-    onSubmit(data);
-    reset();
+  const handleFormSubmit = () => {
+    onSubmit({ name, description, capacity: Number(capacity) });
+    setName(''); setDescription(''); setCapacity(0);
     onClose();
   };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={initialData ? "Edit Room" : "Add New Room"}>
-      <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
+      <form onSubmit={(e) => { e.preventDefault(); handleFormSubmit(); }} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700">Room Name</label>
-          <input {...register('name', { required: true })} className="mt-1 block w-full border border-gray-300 rounded-md p-2" placeholder="e.g. Main Hall" />
+          <input value={name} onChange={e => setName(e.target.value)} className="mt-1 block w-full border border-gray-300 rounded-md p-2" placeholder="e.g. Main Hall" />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700">Description</label>
-          <textarea {...register('description', { required: true })} className="mt-1 block w-full border border-gray-300 rounded-md p-2" />
+          <textarea value={description} onChange={e => setDescription(e.target.value)} className="mt-1 block w-full border border-gray-300 rounded-md p-2" />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700">Capacity</label>
-          <input type="number" {...register('capacity', { required: true, min: 1 })} className="mt-1 block w-full border border-gray-300 rounded-md p-2" />
+          <input type="number" value={capacity} onChange={e => setCapacity(Number(e.target.value))} className="mt-1 block w-full border border-gray-300 rounded-md p-2" />
         </div>
         <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700">
           {initialData ? "Save Changes" : "Create Room"}

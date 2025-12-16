@@ -11,23 +11,39 @@ interface ManageUsersModalProps {
 }
 
 export const ManageUsersModal: React.FC<ManageUsersModalProps> = ({ isOpen, onClose, roomId, roomName }) => {
-  const { roomPermissions, addRoomUser, removeRoomUser } = useData();
+  const { roomPermissions, addRoomUser, removeRoomUser, getRoomUsers } = useData();
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<Role>('user');
 
   const roomUsers = roomPermissions.filter(p => p.roomId === roomId);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleAdd = (e: React.FormEvent) => {
+  React.useEffect(() => {
+    if (isOpen) {
+      getRoomUsers(roomId).catch(() => {});
+    }
+  }, [isOpen, roomId]);
+
+  const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email) {
-      addRoomUser(roomId, email, role);
+    setError('');
+    if (!email) return;
+    setLoading(true);
+    try {
+      await addRoomUser(roomId, email, role);
       setEmail('');
+    } catch (err: any) {
+      setError(err?.message || 'Failed to add');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Manage Users for ${roomName}`}>
       <div className="space-y-6">
+        {error && <div className="text-red-600 text-sm">{error}</div>}
         <form onSubmit={handleAdd} className="flex gap-2 items-end">
           <div className="flex-1">
             <label className="block text-sm font-medium text-gray-700">User Email</label>
@@ -51,8 +67,8 @@ export const ManageUsersModal: React.FC<ManageUsersModalProps> = ({ isOpen, onCl
               <option value="admin">Admin</option>
             </select>
           </div>
-          <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">
-            Add
+          <button type="submit" disabled={loading} className="bg-green-600 disabled:opacity-50 text-white px-4 py-2 rounded-md hover:bg-green-700">
+            {loading ? 'Adding...' : 'Add'}
           </button>
         </form>
 
@@ -71,7 +87,14 @@ export const ManageUsersModal: React.FC<ManageUsersModalProps> = ({ isOpen, onCl
                     </span>
                   </div>
                   <button 
-                    onClick={() => removeRoomUser(roomId, perm.userEmail)}
+                    onClick={async () => {
+                      setError('');
+                      try {
+                        await removeRoomUser(roomId, perm.userEmail);
+                      } catch (err: any) {
+                        setError(err?.message || 'Failed to remove');
+                      }
+                    }}
                     className="text-red-600 hover:text-red-800 text-sm"
                   >
                     Remove

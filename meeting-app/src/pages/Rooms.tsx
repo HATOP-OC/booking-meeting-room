@@ -23,15 +23,31 @@ export const Rooms: React.FC = () => {
     setIsRoomModalOpen(true);
   };
 
+  const handleRoomSubmit = async (data: Omit<Room, 'id'>) => {
+    try {
+      if (selectedRoom) {
+        await updateRoom(selectedRoom.id, data);
+      } else {
+        await addRoom(data);
+      }
+      setIsRoomModalOpen(false);
+    } catch (err: any) {
+      alert(err?.message || 'Failed to save room');
+    }
+  };
+
+  const handleDeleteRoom = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this room?')) return;
+    try {
+      await deleteRoom(id);
+    } catch (err: any) {
+      alert(err?.message || 'Failed to delete room');
+    }
+  };
+
   const handleEditRoom = (room: Room) => {
     setSelectedRoom(room);
     setIsRoomModalOpen(true);
-  };
-
-  const handleDeleteRoom = (id: string) => {
-    if (confirm('Are you sure you want to delete this room?')) {
-      deleteRoom(id);
-    }
   };
 
   const handleBook = (room: Room) => {
@@ -42,14 +58,6 @@ export const Rooms: React.FC = () => {
   const handleManageUsers = (room: Room) => {
     setSelectedRoom(room);
     setIsUsersModalOpen(true);
-  };
-
-  const handleRoomSubmit = (data: Omit<Room, 'id'>) => {
-    if (selectedRoom) {
-      updateRoom(selectedRoom.id, data);
-    } else {
-      addRoom(data);
-    }
   };
 
   const canManageRoom = (room: Room) => {

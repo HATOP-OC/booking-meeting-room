@@ -15,7 +15,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   isOpen, onClose, roomId, roomName 
 }) => {
   const { user } = useAuth();
-  const { bookings, addBooking, updateBooking, deleteBooking, getUserRoleForRoom } = useData();
+  const { bookings, addBooking, updateBooking, deleteBooking, getUserRoleForRoom, getRoomUsers } = useData();
   
   const [title, setTitle] = useState('');
   const [startTime, setStartTime] = useState('');
@@ -26,6 +26,12 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const roomBookings = bookings.filter(b => b.roomId === roomId).sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
   const userRole = user ? getUserRoleForRoom(roomId, user.email) : null;
   const isAdmin = user?.role === 'admin' || userRole === 'admin';
+
+  React.useEffect(() => {
+    if (isOpen) {
+      getRoomUsers(roomId).catch(() => {});
+    }
+  }, [isOpen, roomId]);
 
   const resetForm = () => {
     setTitle('');

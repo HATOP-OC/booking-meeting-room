@@ -1,33 +1,29 @@
 import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
-type AuthForm = {
-  name?: string;
-  email: string;
-  password: string;
-};
-
 export const Login: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
-  const { register, handleSubmit, formState: { errors } } = useForm<AuthForm>();
   const { login, register: registerUser } = useAuth();
+  const [serverError, setServerError] = useState('');
   const navigate = useNavigate();
   const [error, setError] = useState('');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
-  const onSubmit = async (data: AuthForm) => {
+  const onSubmit = async () => {
     setError('');
     if (isLogin) {
-      const success = await login(data.email, data.password);
-      if (success) {
+      const res = await login(email, password);
+      if (res.success) {
         navigate('/rooms');
       } else {
-        setError('Invalid email or password');
+        setServerError(res.message || 'Invalid email or password');
       }
     } else {
-      if (!data.name) return;
-      const success = await registerUser(data.name, data.email, data.password);
+      if (!name) return;
+      const success = await registerUser(name, email, password);
       if (success) {
         navigate('/rooms');
       } else {
@@ -44,38 +40,39 @@ export const Login: React.FC = () => {
         </h2>
         
         {error && <div className="bg-red-100 text-red-700 p-2 mb-4 rounded">{error}</div>}
+        {serverError && <div className="bg-red-100 text-red-700 p-2 mb-4 rounded">{serverError}</div>}
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }} className="space-y-4">
           {!isLogin && (
             <div>
               <label className="block text-sm font-medium text-gray-700">Name</label>
               <input
-                {...register('name', { required: !isLogin ? 'Name is required' : false })}
+                value={name}
+                onChange={e => setName(e.target.value)}
                 type="text"
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               />
-              {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
             </div>
           )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700">Email</label>
             <input
-              {...register('email', { required: 'Email is required' })}
+              value={email}
+              onChange={e => setEmail(e.target.value)}
               type="email"
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             />
-            {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700">Password</label>
             <input
-              {...register('password', { required: 'Password is required' })}
+              value={password}
+              onChange={e => setPassword(e.target.value)}
               type="password"
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             />
-            {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
           </div>
 
           <button
@@ -85,7 +82,6 @@ export const Login: React.FC = () => {
             {isLogin ? 'Sign In' : 'Sign Up'}
           </button>
         </form>
-
         <div className="mt-4 text-center">
           <button
             onClick={() => setIsLogin(!isLogin)}
