@@ -17,9 +17,12 @@ CREATE TABLE IF NOT EXISTS bookings (
   id SERIAL PRIMARY KEY,
   room_id INTEGER REFERENCES rooms(id) ON DELETE CASCADE,
   user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  user_email TEXT,
   start_time TIMESTAMP NOT NULL,
   end_time TIMESTAMP NOT NULL,
-  purpose TEXT
+  title TEXT,
+  purpose TEXT,
+  description TEXT
 );
 
 CREATE TABLE IF NOT EXISTS room_permissions (

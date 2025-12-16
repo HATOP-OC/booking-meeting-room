@@ -45,11 +45,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const headers: any = { 'Content-Type': 'application/json' };
         if (user?.token) headers['Authorization'] = `Bearer ${user.token}`;
-            const [rRes, bRes] = await Promise.all([
-              fetch(`${API_BASE}/api/rooms`, { headers }),
-              fetch(`${API_BASE}/api/bookings`, { headers }),
-            ]);
-            if (rRes.ok) {
+        const [rRes, bRes] = await Promise.all([
+          fetch(`${API_BASE}/api/rooms`, { headers }),
+          fetch(`${API_BASE}/api/bookings`, { headers }),
+        ]);
+        if (rRes.ok) {
           const rData = await rRes.json();
           setRooms(rData.map((r: any) => ({ id: r.id.toString(), name: r.name, description: r.description || '', capacity: r.capacity })));
         }
@@ -69,7 +69,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const res = await fetch(`${API_BASE}/api/rooms`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user.token}` }, body: JSON.stringify(roomData) });
     if (!res.ok) throw new Error('Failed to create room');
     const r = await res.json();
-    setRooms(prev => [...prev, r]);
+    const room: Room = { id: r.id.toString(), name: r.name, description: r.description || '', capacity: r.capacity };
+    setRooms(prev => [...prev, room]);
   };
 
   const updateRoom = async (id: string, data: Partial<Room>) => {
@@ -77,7 +78,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const res = await fetch(`${API_BASE}/api/rooms/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${user.token}` }, body: JSON.stringify(data) });
     if (!res.ok) throw new Error('Failed to update room');
     const r = await res.json();
-    setRooms(prev => prev.map(room => room.id === id ? r : room));
+    const room: Room = { id: r.id.toString(), name: r.name, description: r.description || '', capacity: r.capacity };
+    setRooms(prev => prev.map(existingRoom => existingRoom.id === id ? room : existingRoom));
   };
 
   const deleteRoom = async (id: string) => {
