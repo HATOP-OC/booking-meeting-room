@@ -3,6 +3,8 @@ import { Modal } from './Modal';
 import type { Booking } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
+import { useConfirm } from '../context/ConfirmContext';
+import { useToast } from '../context/ToastContext';
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -16,6 +18,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 }) => {
   const { user } = useAuth();
   const { bookings, addBooking, updateBooking, deleteBooking, getUserRoleForRoom, getRoomUsers } = useData();
+  const { confirm } = useConfirm();
+  const { showToast } = useToast();
   
   const [title, setTitle] = useState('');
   const [startTime, setStartTime] = useState('');
@@ -49,13 +53,23 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Cancel this booking?')) return;
-    setError('');
-    try {
-      await deleteBooking(id);
-    } catch (err: any) {
-      setError(err?.message || 'Failed to delete booking');
-    }
+    confirm({
+      title: 'Cancel Booking',
+      message: 'Are you sure you want to cancel this booking?',
+      confirmText: 'Cancel Booking',
+      cancelText: 'Keep',
+      onConfirm: async () => {
+        setError('');
+        try {
+          await deleteBooking(id);
+          showToast({ message: 'Booking cancelled successfully', type: 'success' });
+        } catch (err) {
+          const errorMsg = err instanceof Error ? err.message : 'Failed to delete booking';
+          setError(errorMsg);
+          showToast({ message: errorMsg, type: 'error' });
+        }
+      }
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -95,6 +109,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
           startTime: start.toISOString(),
           endTime: end.toISOString()
         });
+        showToast({ message: 'Booking updated successfully', type: 'success' });
       } else {
         await addBooking({
           roomId,
@@ -104,11 +119,15 @@ export const BookingModal: React.FC<BookingModalProps> = ({
           startTime: start.toISOString(),
           endTime: end.toISOString()
         });
+        showToast({ message: 'Booking created successfully', type: 'success' });
       }
       resetForm();
-    } catch (err: any) {
-      if (err.message && err.message.includes('time conflict')) setError('Time slot conflict!');
-      else setError(err?.message || 'Failed to save booking');
+    } catch (err) {
+      const errorMsg = err instanceof Error && err.message.includes('time conflict')
+        ? 'Time slot conflict!'
+        : err instanceof Error ? err.message : 'Failed to save booking';
+      setError(errorMsg);
+      showToast({ message: errorMsg, type: 'error' });
     }
   };
 

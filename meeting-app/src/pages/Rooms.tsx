@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import { Users, Monitor, Edit, Trash2, Plus, UserPlus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
+import { useConfirm } from '../context/ConfirmContext';
+import { useToast } from '../context/ToastContext';
 import type { Room } from '../types';
 import { CreateRoomModal } from '../components/CreateRoomModal';
 import { BookingModal } from '../components/BookingModal';
@@ -11,6 +13,8 @@ import { ManageUsersModal } from '../components/ManageUsersModal';
 export const Rooms: React.FC = () => {
   const { user } = useAuth();
   const { rooms, deleteRoom, addRoom, updateRoom, getUserRoleForRoom } = useData();
+  const { confirm } = useConfirm();
+  const { showToast } = useToast();
   
   const [isRoomModalOpen, setIsRoomModalOpen] = useState(false);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
@@ -27,22 +31,38 @@ export const Rooms: React.FC = () => {
     try {
       if (selectedRoom) {
         await updateRoom(selectedRoom.id, data);
+        showToast({ message: 'Room updated successfully', type: 'success' });
       } else {
         await addRoom(data);
+        showToast({ message: 'Room created successfully', type: 'success' });
       }
       setIsRoomModalOpen(false);
-    } catch (err: any) {
-      alert(err?.message || 'Failed to save room');
+    } catch (err) {
+      showToast({ 
+        message: err instanceof Error ? err.message : 'Failed to save room', 
+        type: 'error' 
+      });
     }
   };
 
   const handleDeleteRoom = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this room?')) return;
-    try {
-      await deleteRoom(id);
-    } catch (err: any) {
-      alert(err?.message || 'Failed to delete room');
-    }
+    confirm({
+      title: 'Delete Room',
+      message: 'Are you sure you want to delete this room? All bookings will be removed.',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      onConfirm: async () => {
+        try {
+          await deleteRoom(id);
+          showToast({ message: 'Room deleted successfully', type: 'success' });
+        } catch (err) {
+          showToast({ 
+            message: err instanceof Error ? err.message : 'Failed to delete room', 
+            type: 'error' 
+          });
+        }
+      }
+    });
   };
 
   const handleEditRoom = (room: Room) => {
